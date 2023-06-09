@@ -6,8 +6,8 @@ import numpy as np
 
 hostname = 'fnmaloanhist.ccsgwcueebaq.us-east-2.rds.amazonaws.com'
 database = 'postgres'
-username = 'MaxDataEx'
-pwd = 'balIbear0129!'
+username = 'XXXX'
+pwd = 'XXXX'
 
 conn = psycopg2.connect(
     host=hostname,
