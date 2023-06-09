@@ -22,18 +22,17 @@ conn.autocommit = True
 ####Extract Data####
 
 
-
-dataDF = ('C:/Users/colem/PycharmProjects/pythonProject2/2022Q3.csv')
+dataDF = ('C:/Users/colem/PycharmProjects/pythonProject2/2022Q4.csv')
 
 
 def create_staging_table(cursor):
     cursor.execute("""
     DROP TABLE IF EXISTS loan_staging CASCADE;
     CREATE UNLOGGED TABLE loan_staging(
-    
+
   Pool varchar(25) DEFAULT NULL,
-  LoanID bigint DEFAULT NULL,
-  Period int DEFAULT NULL,
+  LoanID varchar(25) DEFAULT NULL,
+  Period varchar(25)  DEFAULT NULL,
   Channel varchar(2) DEFAULT NULL,
   Seller varchar(100) DEFAULT NULL,
   Servicer varchar(100) DEFAULT NULL,
@@ -139,7 +138,7 @@ def create_staging_table(cursor):
   AltDelResol varchar(1) DEFAULT NULL,
   AltDelResCnt varchar(1) DEFAULT NULL,
   DeferralAmt decimal(10,2) DEFAULT NULL
-    
+
 
     );""")
 
@@ -164,10 +163,35 @@ send_csv_to_psql(conn, dataDF, 'loan_staging')
 
 
 
+
+####Transform####
+def staging_Transform(cursor):
+    cursor.execute("""
+    
+UPDATE loan_staging
+Set pool =
+CASE When (length(period) = 5) THEN (concat(loanid, right(period, 4), 0, left(period,1)))
+
+ELSE concat(loanid, right(period, 4), left(period,2))
+
+END;
+
+UPDATE loan_staging
+Set period = right(pool,6)
+;
+""")
+
+with conn.cursor() as cursor:
+    staging_Transform(cursor)
+
+
+
+
 ####LOAD###
 def data_transform_load(cursor):
     cursor.execute("""
-    INSERT INTO fnma_loanhist (
+
+INSERT INTO fnma_loanhist (
 PK,
 LoanID,
 Period,
@@ -277,58 +301,57 @@ AltDelResol,
 AltDelResCnt,
 DeferralAmt)
 
+
 (Select
-
-Pool,
-LoanID,
-Period,
+cast(Pool as bigint),
+cast(LoanID as int),
+cast(Period as int),
 Channel,
-
-CASE 
+CASE
     When Seller like 'Amtrust%' then 'Amtrust'
     When Seller like 'JPMorgan%' then 'JPMorgan'
-    When Seller like 'Bank of America%' then 'BOA' 
-    When Seller like 'Better%' then 'Better' 
-    When Seller like 'Bishops%' then 'Bishops' 
-    When Seller like 'Citi%' then 'Citi' 
-    When Seller like 'First Tennesse%' then 'FTN' 
-    When Seller like 'Flagstar%' then 'Flagstar' 
-    When Seller like 'Ge Mortgage%' then 'GMAC' 
-    When Seller like 'loanDepot%' then 'loanDepot' 
-    When Seller like '%New American%' then 'NewAmFund' 
-    When Seller like 'PNC%' then 'PNC' 
-    When Seller like 'Penny%' then 'Pennymac' 
-    When Seller like 'RBC%' then 'RBC' 
-    When Seller like 'Regions%' then 'Regions' 
-    When Seller like 'Suntrust%' then 'Truist' 
-    When Seller like 'USAA%' then 'USAA' 
-    When Seller like 'Usaa%' then 'USAA' 
-    When Seller like 'Wells%' then 'Wells'  
+    When Seller like 'Bank of America%' then 'BOA'
+    When Seller like 'Better%' then 'Better'
+    When Seller like 'Bishops%' then 'Bishops'
+    When Seller like 'Citi%' then 'Citi'
+    When Seller like 'First Tennesse%' then 'FTN'
+    When Seller like 'Flagstar%' then 'Flagstar'
+    When Seller like 'Ge Mortgage%' then 'GMAC'
+    When Seller like 'loanDepot%' then 'loanDepot'
+    When Seller like '%New American%' then 'NewAmFund'
+    When Seller like 'PNC%' then 'PNC'
+    When Seller like 'Penny%' then 'Pennymac'
+    When Seller like 'RBC%' then 'RBC'
+    When Seller like 'Regions%' then 'Regions'
+    When Seller like 'Suntrust%' then 'Truist'
+    When Seller like 'USAA%' then 'USAA'
+    When Seller like 'Usaa%' then 'USAA'
+    When Seller like 'Wells%' then 'Wells'
     Else 'Other'
-END as Seller, 
+END as Seller,
 
-CASE 
+CASE
     When Servicer like 'Amtrust%' then 'Amtrust'
     When Servicer like 'JPMorgan%' then 'JPMorgan'
-    When Servicer like 'Bank of America%' then 'BOA' 
-    When Servicer like 'Better%' then 'Better' 
-    When Servicer like 'Bishops%' then 'Bishops' 
-    When Servicer like 'Citi%' then 'Citi' 
-    When Servicer like 'First Tennesse%' then 'FTN' 
-    When Servicer like 'Flagstar%' then 'Flagstar' 
-    When Servicer like 'Ge Mortgage%' then 'GMAC' 
-    When Servicer like 'GMAC%' then 'GMAC' 
-    When Servicer like 'loanDepot%' then 'loanDepot' 
-    When Servicer like 'PNC%' then 'PNC' 
-    When Servicer like 'Penny%' then 'Pennymac' 
-    When Servicer like 'RBC%' then 'RBC' 
-    When Servicer like 'Regions%' then 'Regions' 
-    When Servicer like 'Suntrust%' then 'Truist' 
-    When Servicer like 'USAA%' then 'USAA' 
-    When Servicer like 'Usaa%' then 'USAA' 
-    When Servicer like 'Wells%' then 'Wells' 
+    When Servicer like 'Bank of America%' then 'BOA'
+    When Servicer like 'Better%' then 'Better'
+    When Servicer like 'Bishops%' then 'Bishops'
+    When Servicer like 'Citi%' then 'Citi'
+    When Servicer like 'First Tennesse%' then 'FTN'
+    When Servicer like 'Flagstar%' then 'Flagstar'
+    When Servicer like 'Ge Mortgage%' then 'GMAC'
+    When Servicer like 'GMAC%' then 'GMAC'
+    When Servicer like 'loanDepot%' then 'loanDepot'
+    When Servicer like 'PNC%' then 'PNC'
+    When Servicer like 'Penny%' then 'Pennymac'
+    When Servicer like 'RBC%' then 'RBC'
+    When Servicer like 'Regions%' then 'Regions'
+    When Servicer like 'Suntrust%' then 'Truist'
+    When Servicer like 'USAA%' then 'USAA'
+    When Servicer like 'Usaa%' then 'USAA'
+    When Servicer like 'Wells%' then 'Wells'
     Else 'Other'
-END as Servicer, 
+END as Servicer,
 MasterServicer,
 OrigRate/100,
 CurRate/100,
@@ -432,7 +455,6 @@ AltDelResol,
 AltDelResCnt,
 round(DeferralAmt,2)
 
-
     from loan_staging
 Where age >=0
     );""")
@@ -442,35 +464,18 @@ with conn.cursor() as cursor:
 
 
 
+
+#Drop Staging Table
 def drop_staging_table(cursor):
     cursor.execute("""
     DROP TABLE IF EXISTS loan_staging CASCADE;""")
+
 
 with conn.cursor() as cursor:
     drop_staging_table(cursor)
 
 
-def update_pk(cursor):
-    cursor.execute("""
-    UPDATE fnma_loanhist
-Set pk =
-CASE When (length(period) = 5) THEN (concat(loanid, right(period, 4), 0, left(period,1)))
-ELSE concat(loanid, right(period, 4), left(period,2))
-END;""")
-with conn.cursor() as cursor:
-    update_pk(cursor)
-
-
-
-def update_period(cursor):
-    cursor.execute("""
-UPDATE fnma_loanhist
-Set period = right(pk,6);""")
-
-with conn.cursor() as cursor:
-    update_period(cursor)
 
 
 cur.close()
 conn.close()
-
