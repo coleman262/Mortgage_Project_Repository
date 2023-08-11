@@ -1,0 +1,134 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Aug  9 12:54:01 2023
+
+@author: colem
+"""
+
+
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+df = pd.read_csv('#####################################')
+
+df.dropna(inplace=True)
+
+training_set = df.iloc[:125, 1:107].values #Set the training percentage from total observations
+test_set = df.iloc[125:, 1:107].values
+
+
+from sklearn.preprocessing import MinMaxScaler
+
+sc = MinMaxScaler(feature_range = (0,.2))
+
+training_set_scaled = sc.fit_transform(training_set)
+test_set_scaled = sc.fit_transform(test_set)
+
+test_set_scaled = test_set_scaled[:, 0:105]
+
+x_train = []
+y_train = []
+WS = 3 #how many month of lookback 
+
+
+for i in range(WS, len(training_set_scaled)):
+    x_train.append(training_set_scaled[i-WS:i, 0:106])
+    y_train.append(training_set_scaled[i,105])
+    
+
+x_train, y_train = np.array(x_train), np.array(y_train)
+
+
+x_train = np.reshape(x_train,(x_train.shape[0], x_train.shape[1], 106))
+
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers import LeakyReLU
+
+#hidden layers
+
+Model1 = Sequential()
+
+Model1.add(LSTM(units = 512, return_sequences = True, activation= 'tanh', input_shape  = (x_train.shape[1], 106)))
+Model1.add(Dropout(0.10)) #.2
+
+
+Model1.add(LSTM(units = 256, return_sequences = True, activation= 'tanh'))
+Model1.add(Dropout(0.10))
+
+Model1.add(LSTM(units = 256, return_sequences = True, activation= 'LeakyReLU'))
+Model1.add(Dropout(0.10)) 
+
+
+Model1.add(LSTM(units = 128, activation= 'tanh'))
+Model1.add(Dropout(0.1))
+
+
+Model1.add(Dense(units = 1, activation= 'tanh'))
+
+
+#compiler
+
+Model1.compile(optimizer = 'adam', loss = 'mse', metrics = ['accuracy'])  
+
+Model1.fit(x_train, y_train, epochs = 100, batch_size = 1)
+
+
+plt.plot(range(len(Model1.history.history['loss'])), Model1.history.history['loss'])
+plt.xlabel('Epoch Number')
+plt.ylabel('Loss')
+plt.show()
+
+
+Model1.save('LSTM - 640')
+
+
+from tensorflow.keras.models import load_model
+Model1 = load_model('LSTM - 640')
+
+prediction_test = []
+
+
+Batch_1 = training_set_scaled[-WS:]
+Batch_New = Batch_1.reshape((1,WS,106))
+
+
+for i in range(27):   #number of prediction into the future
+    
+    First_prediction = Model1.predict(Batch_New)[0]
+    prediction_test.append(First_prediction)
+    
+    New_var = test_set_scaled[i,:]
+    
+    New_var =  New_var.reshape(1, 105)
+    
+    New_test = np.insert(New_var, 105, [First_prediction], axis = 1)
+    
+    New_test = New_test.reshape(1,1,106)
+    
+    Batch_New = np.append(Batch_New[:, 1:, :], New_test, axis=1) 
+    
+prediction_test = np.array(prediction_test)
+SI = MinMaxScaler(feature_range = (0,.2))
+y_scale = training_set[:,105:107]
+SI.fit_transform(y_scale)
+
+predictions = SI.inverse_transform(prediction_test)
+
+real_values = test_set[:, 105]
+plt.plot(real_values, color = 'red', label = 'Actual')
+plt.plot(predictions, color = 'blue', label = 'predicted value')
+plt.title('CPR Prediction 5.0 WAC California')
+plt.xlabel('Months: Training vs Actual')
+plt.ylabel('CPR')
+plt.show()
+
+
+         
