@@ -8,128 +8,127 @@ Created on Mon Aug 14 12:53:23 2023
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-
-df = pd.read_csv('C:/Users/colem/xxxxx.csv')
-
-#sns.pairplot(df)
-
+##Import
+df = pd.read_csv('C:/Users/colem/PycharmProjects/pythonProject3/NN_Prepayment_WAC_35_Data_Full_CA_1.csv')
 
 df.dropna(inplace=True)
 
-training_set = df.iloc[:125, 1:191].values #Set the training percentage from total observations
-test_set = df.iloc[125:, 1:191].values
-
+training_set = df.iloc[:125, 1:193].values  # Set the training percentage from total observations
+test_set = df.iloc[125:, 1:193].values
 
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
 
-sc = MinMaxScaler(feature_range = (0,1))
+sc = MinMaxScaler(feature_range=(0, 1))
 
 training_set_scaled = sc.fit_transform(training_set)
 test_set_scaled = sc.fit_transform(test_set)
 
-test_set_scaled = test_set_scaled[:, 0:189]
+test_set_scaled = test_set_scaled[:, 0:191]
 
 x_train = []
 y_train = []
-WS = 1 #how many month of lookback 
-
+WS = 25  # how many month of lookback
 
 for i in range(WS, len(training_set_scaled)):
-    x_train.append(training_set_scaled[i-WS:i, 0:190])
-    y_train.append(training_set_scaled[i,189])
-    
+    x_train.append(training_set_scaled[i - WS:i, 0:192])
+    y_train.append(training_set_scaled[i, 191])
 
 x_train, y_train = np.array(x_train), np.array(y_train)
 
-
-x_train = np.reshape(x_train,(x_train.shape[0], x_train.shape[1], 190))
-
+x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 192))
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
-from tensorflow.keras.layers import LeakyReLU
-
-#hidden layers
-
-Model1 = Sequential()
-
-Model1.add(LSTM(units = 512, return_sequences = True, activation= 'tanh', input_shape  = (x_train.shape[1], 190)))
-Model1.add(Dropout(x.x))
 
 
-Model1.add(LSTM(units = 256, return_sequences = True, activation= 'tanh'))
-Model1.add(Dropout(x.x))
+# hidden layers
 
-Model1.add(LSTM(units = 256, return_sequences = True, activation= 'tanh'))
-Model1.add(Dropout(x.x)) 
+Model = Sequential()
 
+Model.add(LSTM(units=256, return_sequences=True, activation='tanh', input_shape=(x_train.shape[1], 192)))
+Model.add(Dropout(0.3))
 
-Model1.add(LSTM(units = 64, activation= 'tanh'))
-Model1.add(Dropout(x.x))
+#Model.add(LSTM(units = 256, return_sequences = True, activation= 'LeakyReLU'))
+#Model.add(Dropout(0.25))
 
-
-Model1.add(Dense(units = 1, activation= 'tanh'))
-
-
-#compiler
-
-Model1.compile(optimizer = 'adam', loss = 'mse', metrics = ['accuracy'])  
-
-Model1.fit(x_train, y_train, epochs = 30, batch_size = 1)
+#Model.add(LSTM(units = 256, return_sequences = True, activation= 'ReLU'))
+#Model.add(Dropout(0.20))
 
 
-plt.plot(range(len(Model1.history.history['loss'])), Model1.history.history['loss'])
+Model.add(LSTM(units=128, activation='LeakyReLU'))
+Model.add(Dropout(0.2))
+
+Model.add(Dense(units=1, activation='tanh'))  # output layer
+
+# compiler
+
+Model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+
+Model.fit(x_train, y_train, epochs=30, batch_size=1)
+
+plt.plot(range(len(Model.history.history['loss'])), Model.history.history['loss'])
 plt.xlabel('Epoch Number')
 plt.ylabel('Loss')
 plt.show()
 
-
-Model1.save('LSTM - 118')
-
+Model.save('LSTM - 157')
 
 from tensorflow.keras.models import load_model
-Model1 = load_model('LSTM - 118')
+
+Model = load_model('LSTM - 157')
 
 prediction_test = []
 
-
 Batch_1 = training_set_scaled[-WS:]
-Batch_New = Batch_1.reshape((1,WS,190))
+Batch_New = Batch_1.reshape((1, WS, 192))
 
+for i in range(25):  # number of prediction into the future
 
-for i in range(26):   #number of prediction into the future
-    
-    First_prediction = Model1.predict(Batch_New)[0]
+    First_prediction = Model.predict(Batch_New)[0]
     prediction_test.append(First_prediction)
-    
-    New_var = test_set_scaled[i,:]
-    
-    New_var =  New_var.reshape(1, 189)
-    
-    New_test = np.insert(New_var, 189, [First_prediction], axis = 1)
-    
-    New_test = New_test.reshape(1,1,190)
-    
-    Batch_New = np.append(Batch_New[:, 1:, :], New_test, axis=1) 
-    
+
+    New_var = test_set_scaled[i, :]
+
+    New_var = New_var.reshape(1, 191)
+
+    New_test = np.insert(New_var, 191, [First_prediction], axis=1)
+
+    New_test = New_test.reshape(1, 1, 192)
+
+    Batch_New = np.append(Batch_New[:, 1:, :], New_test, axis=1)
+
 prediction_test = np.array(prediction_test)
-SI = MinMaxScaler(feature_range = (0,1))
-y_scale = training_set[:,189:191]
+SI = MinMaxScaler(feature_range=(0, 1))
+y_scale = training_set[:, 191:193]
 SI.fit_transform(y_scale)
 
-predictions = SI.inverse_transform(prediction_test) #transforms data back into readable data from scaled...
+predictions = SI.inverse_transform(prediction_test)
 
-real_values = test_set[:, 189]
-plt.plot(real_values, color = 'red', label = 'Actual')
-plt.plot(predictions, color = 'blue', label = 'predicted value')
+real_values = test_set[:, 191]
+plt.plot(real_values, color='red', label='Actual')
+plt.plot(predictions, color='blue', label='predicted value')
 plt.title('CPR Prediction 3.5 WAC California')
 plt.xlabel('Months: Training vs Actual')
 plt.ylabel('CPR')
 plt.show()
 
 
+expected = real_values
+from sklearn.metrics import mean_absolute_error
 
+mae = mean_absolute_error(expected, predictions)
+print('MAE: %f' % mae)
+
+
+forecast_errors = [expected[i]-predictions[i] for i in range(len(expected))]
+bias = sum(forecast_errors) * 1.0/len(expected)
+print('Bias: %f' % bias)
+
+
+# $import scipy.stats
+# import pylab
+# scipy.stats.probplot(df.pmms_3, plot = pylab)
