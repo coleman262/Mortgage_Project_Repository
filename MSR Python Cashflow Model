@@ -1,0 +1,93 @@
+#MSR and Loan cash flow / amortization schedule
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def calculate_payment(principal, rate, term):
+    monthly_interest_rate = rate / 12
+    total_payments = term
+    monthly_payment = (principal * monthly_interest_rate) / (1 - (1 + monthly_interest_rate) ** -total_payments)
+    return monthly_payment
+
+def loan_amortization_schedule(principal, rate, term, prepayment_percentage,service_fee,setup_cost):
+    monthly_payment = calculate_payment(principal, rate, term)
+    remaining_principal = principal
+    amortization_schedule = []
+
+
+    for month in range(1, term + 1):
+        interest_payment = remaining_principal * (rate / 12)
+        principal_payment = monthly_payment - interest_payment
+        prepayment = remaining_principal * (1-(1-prepayment_percentage)**(1/12))
+        total_payment = monthly_payment + prepayment
+        remaining_principal -= (principal_payment + prepayment)
+        serv_fee_cf = service_fee/12*(remaining_principal+(principal_payment + prepayment))
+        ancillary_fee = ancillary/12
+        pandi_float = (pandi_flt/360)*(interest_payment+prepayment+principal_payment)*flt_earn_rate
+        escrow_float = escrow_bal_float*flt_earn_rate/12
+        cost_to_service = cts/12
+        int_on_escrow = int_escrow*escrow_bal_float/12
+        interest_lost = prepayment*service_fee*(int_lost_days/30)
+        setup_costs = setup_cost
+        if remaining_principal < .0001:
+            break
+
+
+
+        msr_cashflow = (serv_fee_cf+ancillary_fee+pandi_float+escrow_float) - (cost_to_service + int_on_escrow +interest_lost + setup_costs)
+
+
+        amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment, remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, int_on_escrow, interest_lost, setup_costs, msr_cashflow])
+
+    column_names = ['month', 'total_payment', 'monthly_payment','Prepay', 'Interest', 'Principal', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Int Escrow', 'Int Lost', 'Setup Costs', 'Total Cash Flow']
+
+
+    df = pd.DataFrame(amortization_schedule, columns = column_names)
+
+    #cols = df[['month', 'Total Cash Flow']].shift(1)
+
+
+    #print(cols)
+
+    df.to_csv("C://Users/colem/msr_cash_flows.csv", header=True, index=False)
+
+    return amortization_schedule
+
+
+#Plot is loan amortization including prepayments only
+def plot_loan_amortization_schedule(amortization_schedule):
+    months = [entry[0] for entry in amortization_schedule]
+    remaining_principal = [entry[6] for entry in amortization_schedule]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(months, remaining_principal, color='b', linewidth=2, label='Remaining Principal')
+    plt.xlabel('Months')
+    plt.ylabel('Loan Balance ($)')
+    plt.title('Mortgage Loan Amortization Schedule with Prepayment')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+#Loan variables
+principal = 360000
+rate = .06
+term = 360
+prepayment_percentage = .04 #Prepayment expressed as a percentage of the remaining principal
+service_fee = .0025
+ancillary = 10
+pandi_flt = 13
+flt_earn_rate = .03
+escrow_bal_float = 1600
+cts = 70
+int_escrow = .01
+int_lost_days = 10
+setup_cost = 0
+
+
+
+
+amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee, setup_cost)
+plot_loan_amortization_schedule(amortization_schedule)
+
