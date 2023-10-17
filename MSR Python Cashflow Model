@@ -29,15 +29,12 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
         cost_to_service = cts/12
         int_on_escrow = int_escrow*escrow_bal_float/12
         interest_lost = prepayment*service_fee*(int_lost_days/30)
-
         if month == 1:
             setup_costs = 10
         else:
             setup_costs = 0
-        #setup_costs = setup_cost
 
-
-        if remaining_principal < .0001:
+        if interest_payment < .0001:
             break
 
 
@@ -53,8 +50,6 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
     df = pd.DataFrame(amortization_schedule, columns = column_names)
 
     #cols = df[['month', 'Total Cash Flow']].shift(1)
-
-
     #print(cols)
 
     df.to_csv("C://Users/colem/msr_cash_flows.csv", header=True, index=False)
@@ -81,7 +76,7 @@ def plot_loan_amortization_schedule(amortization_schedule):
 principal = 360000
 rate = .06
 term = 360
-prepayment_percentage = .04 #Prepayment expressed as a percentage of the remaining principal
+prepayment_percentage = .06 #Prepayment expressed as a percentage of the remaining principal
 service_fee = .0025
 ancillary = 10
 pandi_flt = 13
@@ -97,8 +92,5 @@ disc = .10
 
 
 
-
-
 amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee)
 plot_loan_amortization_schedule(amortization_schedule)
-
