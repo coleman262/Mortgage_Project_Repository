@@ -24,7 +24,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
         remaining_principal -= (principal_payment + prepayment)
         serv_fee_cf = service_fee/12*(remaining_principal+(principal_payment + prepayment))
         ancillary_fee = ancillary/12
-        pandi_float = (pandi_flt/360)*(interest_payment+prepayment+principal_payment)*flt_earn_rate
+        pandi_float = (pandi_flt/360)*flt_earn_rate*(interest_payment+prepayment+principal_payment)
         escrow_float = escrow_bal_float*flt_earn_rate/12
         cost_to_service = cts/12
         int_on_escrow = int_escrow*escrow_bal_float/12
@@ -44,7 +44,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
 
         amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment, remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, int_on_escrow, interest_lost, setup_costs, msr_cashflow])
 
-    column_names = ['month', 'total_payment', 'monthly_payment','Prepay', 'Interest', 'Principal', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Int Escrow', 'Int Lost', 'Setup Costs', 'Total Cash Flow']
+    column_names = ['Month', 'total_payment', 'monthly_payment','Prepayment', 'Interest', 'Principal', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Int Escrow', 'Int Lost', 'Setup Costs', 'Total Cash Flow']
 
 
     df = pd.DataFrame(amortization_schedule, columns = column_names)
@@ -52,7 +52,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
     #cols = df[['month', 'Total Cash Flow']].shift(1)
     #print(cols)
 
-    df.to_csv("C://Users/colem/msr_cash_flows.csv", header=True, index=False)
+    df.to_csv("C:/Users/colem/msr_cash_flows.csv", columns = ['Month', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Total Cash Flow'], index = False)
 
     return amortization_schedule
 
@@ -76,7 +76,7 @@ def plot_loan_amortization_schedule(amortization_schedule):
 principal = 360000
 rate = .06
 term = 360
-prepayment_percentage = .06 #Prepayment expressed as a percentage of the remaining principal
+prepayment_percentage = .04 #Prepayment expressed as a percentage of the remaining principal
 service_fee = .0025
 ancillary = 10
 pandi_flt = 13
@@ -94,3 +94,4 @@ disc = .10
 
 amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee)
 plot_loan_amortization_schedule(amortization_schedule)
+
