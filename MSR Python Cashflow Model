@@ -58,19 +58,17 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
 
 
     #Uncomment and change path to export csv file
-  #  df.to_csv("C:/Users/colem/msr_cash_flows.csv",
-  #            columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
-  #                     'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
-  #                     'Total Cash Flow', 'Disc MSR Cashflow'], index=False)
+#    df.to_csv("C:/Users/colem/msr_cash_flows.csv",
+#              columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
+#                       'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
+#                       'Total Cash Flow', 'Disc MSR Cashflow'], index=False)
 
 
 
-
+#PX - IRR - Durations
     present_value = df['Disc MSR Cashflow'].sum()
     pv_format = f"Present value of cash flows: ${present_value:.0f}"
     print(pv_format)
-
-
 
 
     px = []
@@ -83,6 +81,9 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
 
     macaulay_duration = ((df['Wtd_Cashflow']/(loan_price*-1)).sum())/12
     print(f"Macaulay Duration: {macaulay_duration:.3}")
+
+    mod_duration = macaulay_duration/(1+irr)
+    print(f"Modified Duration: {mod_duration:.3}")
 
 
     return amortization_schedule
@@ -125,5 +126,4 @@ discount_rate = .10
 
 amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee)
 plot_loan_amortization_schedule(amortization_schedule)
-
 
