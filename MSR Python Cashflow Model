@@ -1,8 +1,11 @@
 #MSR and Loan cash flow / amortization schedule
 
 import numpy as np
+import numpy_financial as npf
 import pandas as pd
 import matplotlib.pyplot as plt
+
+
 
 def calculate_payment(principal, rate, term):
     monthly_interest_rate = rate / 12
@@ -36,24 +39,43 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
 
         if interest_payment < .0001:
             break
-
-        begin_bal = (remaining_principal+total_payment+prepayment)
+        begin_bal = (remaining_principal + principal_payment + prepayment)
         msr_cashflow = (serv_fee_cf+ancillary_fee+pandi_float+escrow_float) - (cost_to_service + int_on_escrow +interest_lost + setup_costs)
+        disc_msr_cashflow = msr_cashflow / (1 + disc / 12) ** month
 
 
-        amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment, remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, int_on_escrow, interest_lost, setup_costs,begin_bal, msr_cashflow])
+        amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment, remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, int_on_escrow, interest_lost, setup_costs,begin_bal, msr_cashflow, disc_msr_cashflow])
 
-    column_names = ['Month', 'total_payment', 'monthly_payment','Prepayment', 'Interest', 'Principal', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Int Escrow', 'Int Lost', 'Setup Costs', 'Beginning Bal', 'Total Cash Flow']
+    column_names = ['Month', 'total_payment', 'monthly_payment','Prepayment', 'Interest', 'Principal', 'End Balance', 'Service Fee', 'Ancillary',
+                    'PandI Float', 'Escrow Float', 'CTS', 'Int Escrow', 'Int Lost', 'Setup Costs', 'Beginning Bal', 'Total Cash Flow',
+                    'Disc MSR Cashflow']
 
 
     df = pd.DataFrame(amortization_schedule, columns = column_names)
 
-    #cols = df[['month', 'Total Cash Flow']].shift(1)
-    #print(cols)
 
-    df.to_csv("C:/Users/colem/msr_cash_flows.csv", columns = ['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Int Escrow', 'Int Lost', 'Total Cash Flow'], index = False)
+    #Uncomment and change path to export csv file
+    # df.to_csv("C:/Users/colem/msr_cash_flows.csv",
+    #           columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
+    #                    'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
+    #                    'Total Cash Flow', 'Disc MSR Cashflow'], index=False)
+
+
+    PV = df['Disc MSR Cashflow'].sum()
+    pv_format = f"${PV:.0f}"
+    print(pv_format)
+
+    px = []
+    loan_price = price * -principal
+    px.append(loan_price)
+    px.extend(df['Total Cash Flow'])
+    irr = npf.irr(px)*12
+    print("IRR Cash Flows: {:.2%}".format(irr))
+
 
     return amortization_schedule
+
+
 
 
 #Plot is loan amortization including prepayments only
@@ -84,8 +106,6 @@ escrow_bal_float = 1600
 cts = 70
 int_escrow = .01
 int_lost_days = 10
-
-
 price = .0125
 disc = .10
 
