@@ -37,14 +37,13 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
         if interest_payment < .0001:
             break
 
-
-
+        begin_bal = (remaining_principal+total_payment+prepayment)
         msr_cashflow = (serv_fee_cf+ancillary_fee+pandi_float+escrow_float) - (cost_to_service + int_on_escrow +interest_lost + setup_costs)
 
 
-        amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment, remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, int_on_escrow, interest_lost, setup_costs, msr_cashflow])
+        amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment, remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, int_on_escrow, interest_lost, setup_costs,begin_bal, msr_cashflow])
 
-    column_names = ['Month', 'total_payment', 'monthly_payment','Prepayment', 'Interest', 'Principal', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Int Escrow', 'Int Lost', 'Setup Costs', 'Total Cash Flow']
+    column_names = ['Month', 'total_payment', 'monthly_payment','Prepayment', 'Interest', 'Principal', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Int Escrow', 'Int Lost', 'Setup Costs', 'Beginning Bal', 'Total Cash Flow']
 
 
     df = pd.DataFrame(amortization_schedule, columns = column_names)
@@ -52,7 +51,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
     #cols = df[['month', 'Total Cash Flow']].shift(1)
     #print(cols)
 
-    df.to_csv("C:/Users/colem/msr_cash_flows.csv", columns = ['Month', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Int Escrow', 'Int Lost', 'Total Cash Flow'], index = False)
+    df.to_csv("C:/Users/colem/msr_cash_flows.csv", columns = ['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Int Escrow', 'Int Lost', 'Total Cash Flow'], index = False)
 
     return amortization_schedule
 
