@@ -52,7 +52,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
     #cols = df[['month', 'Total Cash Flow']].shift(1)
     #print(cols)
 
-    df.to_csv("C:/Users/colem/msr_cash_flows.csv", columns = ['Month', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Total Cash Flow'], index = False)
+    df.to_csv("C:/Users/colem/msr_cash_flows.csv", columns = ['Month', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Setup Costs', 'Int Escrow', 'Int Lost', 'Total Cash Flow'], index = False)
 
     return amortization_schedule
 
