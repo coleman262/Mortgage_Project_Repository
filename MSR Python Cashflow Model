@@ -10,7 +10,7 @@ def calculate_payment(principal, rate, term):
     monthly_payment = (principal * monthly_interest_rate) / (1 - (1 + monthly_interest_rate) ** -total_payments)
     return monthly_payment
 
-def loan_amortization_schedule(principal, rate, term, prepayment_percentage,service_fee,setup_cost):
+def loan_amortization_schedule(principal, rate, term, prepayment_percentage,service_fee):
     monthly_payment = calculate_payment(principal, rate, term)
     remaining_principal = principal
     amortization_schedule = []
@@ -29,7 +29,14 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
         cost_to_service = cts/12
         int_on_escrow = int_escrow*escrow_bal_float/12
         interest_lost = prepayment*service_fee*(int_lost_days/30)
-        setup_costs = setup_cost
+
+        if month == 1:
+            setup_costs = 10
+        else:
+            setup_costs = 0
+        #setup_costs = setup_cost
+
+
         if remaining_principal < .0001:
             break
 
@@ -83,11 +90,15 @@ escrow_bal_float = 1600
 cts = 70
 int_escrow = .01
 int_lost_days = 10
-setup_cost = 0
+
+
+price = .0125
+disc = .10
 
 
 
 
-amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee, setup_cost)
+
+amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee)
 plot_loan_amortization_schedule(amortization_schedule)
 
