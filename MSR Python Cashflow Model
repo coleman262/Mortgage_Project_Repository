@@ -62,7 +62,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
 
 
     PV = df['Disc MSR Cashflow'].sum()
-    pv_format = f"${PV:.0f}"
+    pv_format = f"Present value: ${PV:.0f}"
     print(pv_format)
 
     px = []
