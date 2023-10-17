@@ -41,7 +41,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
             break
         begin_bal = (remaining_principal + principal_payment + prepayment)
         msr_cashflow = (serv_fee_cf+ancillary_fee+pandi_float+escrow_float) - (cost_to_service + int_on_escrow +interest_lost + setup_costs)
-        disc_msr_cashflow = msr_cashflow / (1 + disc / 12) ** month
+        disc_msr_cashflow = msr_cashflow / (1 + discount_rate / 12) ** month
 
 
         amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment, remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, int_on_escrow, interest_lost, setup_costs,begin_bal, msr_cashflow, disc_msr_cashflow])
@@ -62,7 +62,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
 
 
     PV = df['Disc MSR Cashflow'].sum()
-    pv_format = f"Present value: ${PV:.0f}"
+    pv_format = f"Present value of cash flows: ${PV:.0f}"
     print(pv_format)
 
     px = []
@@ -70,7 +70,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage,serv
     px.append(loan_price)
     px.extend(df['Total Cash Flow'])
     irr = npf.irr(px)*12
-    print("IRR Cash Flows: {:.2%}".format(irr))
+    print("IRR cash flows: {:.2%}".format(irr))
 
 
     return amortization_schedule
@@ -107,7 +107,7 @@ cts = 70
 int_escrow = .01
 int_lost_days = 10
 price = .0125
-disc = .10
+discount_rate = .10
 
 
 
