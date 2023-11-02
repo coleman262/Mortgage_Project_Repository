@@ -102,6 +102,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     px.append(loan_price)
     px.extend(df['Total Cash Flow'])
     irr = npf.irr(px)*12
+    print("Price: {:.3%}".format(price))
     print("ROA: {:.2%}".format(irr))
 
     px2= []
