@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 principal = 1000000000
 rate = .075
 term = 360
-prepayment_percentage = 0.05#p.array([0.05])   Prepayment expressed as a percentage of the remaining principal
+prepayment_percentage = 0.05 #Prepayment expressed as a percentage of the remaining principal
 service_fee = .0025
 ancillary = 10
 pandi_flt = 13
 flt_earn_rate = .03
 escrow_bal_float = 1600
 cts = 70
-additional_cts = 10
+additional_cts = 50
 int_escrow = .01
 int_lost_days = 10
 mult = 4.5
@@ -88,6 +88,11 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
 
 
 #PX - IRR - Durations
+    title = f"{'         MSR Return Summary         '}"
+    line =  f"{'------------------------------------'}"
+    print(title)
+    print(line)
+
     present_value = df['Disc MSR Cashflow'].sum()
     pv_format = f"Present value: ${present_value:,.0f}"
     print(pv_format)
@@ -111,6 +116,9 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     print(f"Macaulay Duration: {macaulay_duration:.3}")
     mod_duration = macaulay_duration/(1+irr)
     print(f"Modified Duration: {mod_duration:.3}")
+
+    line2 = f"{'------------------------------------'}"
+    print(line2)
 
     return amortization_schedule
 
