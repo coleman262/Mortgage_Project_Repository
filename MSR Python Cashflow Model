@@ -25,7 +25,7 @@ price = service_fee*mult
 discount_rate = .10
 leverage = .7
 loan_count = 2800
-del_loan_count = 56
+del_loan_count = 50
 financing_costs = .07
 
 
@@ -52,7 +52,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
         escrow_float = (escrow_bal_float*flt_earn_rate/12)*loan_count
         cost_to_service = (cts/12)*loan_count
         add_cts = additional_cts*del_loan_count
-        int_on_escrow = int_escrow*escrow_bal_float/12
+        int_on_escrow = (int_escrow*escrow_bal_float/12)*loan_count
         interest_lost = prepayment*service_fee*(int_lost_days/30)
         if month == 1:
             setup_costs = 10*loan_count
@@ -87,8 +87,8 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
                        'Total Cash Flow', 'Total Cash Flow2', 'Disc MSR Cashflow', 'ffinancing_costs'], index=False)
 
 
-#PX - IRR - Durations
-    title = f"{'         MSR Return Summary         '}"
+#Terminal Output Summary Table 
+    title = f"{'         PMSR Return Summary        '}"
     line =  f"{'------------------------------------'}"
     print(title)
     print(line)
