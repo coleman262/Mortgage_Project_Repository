@@ -1,13 +1,12 @@
+import os
 import psycopg2
-import pandas as pd
-import numpy as np
+import timeit
 
 # AWS Pycharm Postgres Connection Query for ETL
-
-hostname = 'fnmaloanhist.ccsgwcueebaq.us-east-2.rds.amazonaws.com'
+hostname = 'localhost'
 database = 'postgres'
-username = 'XXXX'
-pwd = 'XXXX'
+username = 'postgres'
+pwd = 'xxxxxxx'
 
 conn = psycopg2.connect(
     host=hostname,
@@ -19,19 +18,99 @@ conn = psycopg2.connect(
 cur = conn.cursor()
 conn.autocommit = True
 
-####Extract Data####
+# List of CSV files to import
+csv_files = [
 
+    'E:/SQL/Data/2003Q3.csv',
+    'E:/SQL/Data/2003Q4.csv',
+    'E:/SQL/Data/2004Q1.csv',
+    'E:/SQL/Data/2004Q2.csv',
+    'E:/SQL/Data/2004Q3.csv',
+    'E:/SQL/Data/2004Q4.csv',
+    'E:/SQL/Data/2005Q1.csv',
+    'E:/SQL/Data/2005Q2.csv',
+    'E:/SQL/Data/2005Q3.csv',
+    'E:/SQL/Data/2005Q4.csv',
+    'E:/SQL/Data/2006Q1.csv',
+    'E:/SQL/Data/2006Q2.csv',
+    'E:/SQL/Data/2006Q3.csv',
+    'E:/SQL/Data/2006Q4.csv',
+    'E:/SQL/Data/2007Q1.csv',
+    'E:/SQL/Data/2007Q2.csv',
+    'E:/SQL/Data/2007Q3.csv',
+    'E:/SQL/Data/2007Q4.csv',
+    'E:/SQL/Data/2008Q1.csv',
+    'E:/SQL/Data/2008Q2.csv',
+    'E:/SQL/Data/2008Q3.csv',
+    'E:/SQL/Data/2008Q4.csv',
+    'E:/SQL/Data/2009Q1.csv',
+    'E:/SQL/Data/2009Q2.csv',
+    'E:/SQL/Data/2009Q3.csv',
+    'E:/SQL/Data/2009Q4.csv',
+    'E:/SQL/Data/2010Q1.csv',
+    'E:/SQL/Data/2010Q2.csv',
+    'E:/SQL/Data/2010Q3.csv',
+    'E:/SQL/Data/2010Q4.csv',
+    'E:/SQL/Data/2011Q1.csv',
+    'E:/SQL/Data/2011Q2.csv',
+    'E:/SQL/Data/2011Q3.csv',
+    'E:/SQL/Data/2011Q4.csv',
+    'E:/SQL/Data/2012Q1.csv',
+    'E:/SQL/Data/2012Q2.csv',
+    'E:/SQL/Data/2012Q3.csv',
+    'E:/SQL/Data/2012Q4.csv',
+    'E:/SQL/Data/2013Q1.csv',
+    'E:/SQL/Data/2013Q2.csv',
+    'E:/SQL/Data/2013Q3.csv',
+    'E:/SQL/Data/2013Q4.csv',
+    'E:/SQL/Data/2014Q1.csv',
+    'E:/SQL/Data/2014Q2.csv',
+    'E:/SQL/Data/2014Q3.csv',
+    'E:/SQL/Data/2014Q4.csv',
+    'E:/SQL/Data/2015Q1.csv',
+    'E:/SQL/Data/2015Q2.csv',
+    'E:/SQL/Data/2015Q3.csv',
+    'E:/SQL/Data/2015Q4.csv',
+    'E:/SQL/Data/2016Q1.csv',
+    'E:/SQL/Data/2016Q2.csv',
+    'E:/SQL/Data/2016Q3.csv',
+    'E:/SQL/Data/2016Q4.csv',
+    'E:/SQL/Data/2017Q1.csv',
+    'E:/SQL/Data/2017Q2.csv',
+    'E:/SQL/Data/2017Q3.csv',
+    'E:/SQL/Data/2017Q4.csv',
+    'E:/SQL/Data/2018Q1.csv',
+    'E:/SQL/Data/2018Q2.csv',
+    'E:/SQL/Data/2018Q3.csv',
+    'E:/SQL/Data/2018Q4.csv',
+    'E:/SQL/Data/2019Q1.csv',
+    'E:/SQL/Data/2019Q2.csv',
+    'E:/SQL/Data/2019Q3.csv',
+    'E:/SQL/Data/2019Q4.csv',
+    'E:/SQL/Data/2020Q1.csv',
+    'E:/SQL/Data/2020Q2.csv',
+    'E:/SQL/Data/2020Q3.csv',
+    'E:/SQL/Data/2020Q4.csv',
+    'E:/SQL/Data/2021Q1.csv',
+    'E:/SQL/Data/2021Q2.csv',
+    'E:/SQL/Data/2021Q3.csv',
+    'E:/SQL/Data/2021Q4.csv',
+    'E:/SQL/Data/2022Q1.csv',
+    'E:/SQL/Data/2022Q2.csv',
+    'E:/SQL/Data/2022Q3.csv',
+    'E:/SQL/Data/2022Q4.csv',
+    'E:/SQL/Data/2023Q1.csv',
+    'E:/SQL/Data/2023Q2.csv'
 
-dataDF = ('C:/Users/colem/PycharmProjects/pythonProject2/2022Q4.csv')
+]
 
 
 def create_staging_table(cursor):
     cursor.execute("""
-    DROP TABLE IF EXISTS loan_staging CASCADE;
-    CREATE UNLOGGED TABLE loan_staging(
-
-  Pool varchar(25) DEFAULT NULL,
-  LoanID varchar(25) DEFAULT NULL,
+    DROP TABLE IF EXISTS loan_staging1 CASCADE;
+    CREATE UNLOGGED TABLE loan_staging1(
+    Pool varchar(25) DEFAULT NULL,
+  LoanID varchar(50) DEFAULT NULL,
   Period varchar(25)  DEFAULT NULL,
   Channel varchar(2) DEFAULT NULL,
   Seller varchar(100) DEFAULT NULL,
@@ -74,7 +153,7 @@ def create_staging_table(cursor):
   ModFlag varchar(3) DEFAULT NULL,
   MtgencCaclInsur varchar(2) DEFAULT NULL,
   ZeroBalCode varchar(3) DEFAULT NULL,
-  ZeroBalDt int DEFAULT NULL,
+  ZeroBalDt varchar(25) DEFAULT NULL,
   UPBLiq decimal(10,2) DEFAULT NULL,
   RepurchDt int DEFAULT NULL,
   SchedPrinCur decimal(10,2) DEFAULT NULL,
@@ -111,7 +190,7 @@ def create_staging_table(cursor):
   SpeciaEligProgram varchar(45) DEFAULT NULL,
   FCPrinWriteOff decimal(10,2) DEFAULT NULL,
   ReloMtge varchar(1) DEFAULT NULL,
-  ZeroBalChgDt int DEFAULT NULL,
+  ZeroBalChgDt varchar(25)DEFAULT NULL,
   LoanHoldback varchar(1) DEFAULT NULL,
   LoanHoldbackDT int DEFAULT NULL,
   DlqAccurInt int DEFAULT NULL,
@@ -138,9 +217,8 @@ def create_staging_table(cursor):
   AltDelResol varchar(1) DEFAULT NULL,
   AltDelResCnt varchar(1) DEFAULT NULL,
   DeferralAmt decimal(10,2) DEFAULT NULL
-
-
-    );""")
+    );
+    """)
 
 
 with conn.cursor() as cursor:
@@ -149,333 +227,83 @@ with conn.cursor() as cursor:
 
 def send_csv_to_psql(connection, csv, table_):
     sql = "COPY %s FROM STDIN WITH CSV HEADER DELIMITER AS '|'"
-    file = open(csv, "r")
-    table = table_
-    with connection.cursor() as cur:
-        cur.execute("truncate " + table + ";")  # to eliminate duplicates
-        cur.copy_expert(sql=sql % table, file=file)
-        connection.commit()
+    with open(csv, 'r') as file:
+        with connection.cursor() as cur:
+            cur.execute("TRUNCATE " + table_ + ";")  # to eliminate duplicates
+            cur.copy_expert(sql=sql % table_, file=file)
+            connection.commit()
 
-    return connection.commit()
+# Wrap the function calls with timeit to measure execution time
+upload_time = timeit.timeit(lambda: [send_csv_to_psql(conn, csv_file, 'fnma_loanhist') for csv_file in csv_files], number=1)
 
-
-send_csv_to_psql(conn, dataDF, 'loan_staging')
-
+print(f"Data upload took {upload_time:.2f} seconds.")
 
 
-
-####Transform####
 def staging_Transform(cursor):
     cursor.execute("""
-    
-UPDATE loan_staging
-Set pool =
-CASE When (length(period) = 5) THEN (concat(loanid, right(period, 4), 0, left(period,1)))
 
-ELSE concat(loanid, right(period, 4), left(period,2))
+UPDATE fnma_loanhist
+Set pk =
+CASE When (length(period) = 5) THEN concat(right(period, 4), 0, left(period,1))
+
+ELSE concat(right(period, 4), left(period,2))
 
 END;
 
-UPDATE loan_staging
-Set period = right(pool,6)
+UPDATE fnma_loanhist
+Set zerobalchgdt =
+CASE When (length(zerobaldt) = 5) THEN concat(right(zerobalchgdt, 4), 0, left(zerobaldt,1))
+
+ELSE concat(right(zerobaldt, 4), left(zerobaldt,2))
+
+END;
+
+
+UPDATE fnma_loanhist
+Set period = right(pk,6)
+;
+
+Update fnma_loanhist
+Set DeferralAmt = Case
+When origrate < 2.25 then 1.5
+When origrate between 2.25 and 2.7499 then 2.0
+When origrate between 2.75 and 3.2499 then 2.5
+When origrate between 3.25 and 3.7499 then 3.0
+When origrate between 3.75 and 4.2499 then 3.5
+When origrate between 4.25 and 4.7499 then 4.0
+When origrate between 4.75 and 5.2499 then 4.5
+When origrate between 5.25 and 5.7499 then 5.0
+When origrate between 5.75 and 6.2499 then 5.5
+When origrate between 6.25 and 6.7499 then 6.0
+When origrate between 6.75 and 7.2499 then 6.5
+When origrate between 7.25 and 7.7499 then 7.0
+When origrate between 7.75 and 8.2499 then 7.5
+When origrate between 8.25 and 8.7499 then 8.0
+When origrate between 8.75 and 9.2499 then 8.5
+When origrate >= 9.25 then 9.0
+
+end;
+
 ;
 """)
+
 
 with conn.cursor() as cursor:
     staging_Transform(cursor)
 
 
 
+# Perform your transformations and loading operations here
 
-####LOAD###
-def data_transform_load(cursor):
-    cursor.execute("""
-
-INSERT INTO fnma_loanhist (
-PK,
-LoanID,
-Period,
-Channel,
-Seller,
-Servicer,
-MasterServicer,
-OrigRate,
-CurRate,
-OrigUPB,
-UPBIssue,
-CurUPB,
-OrigTerm,
-OrigDate,
-FstPayDt,
-Age,
-RemLegalTerm,
-RemTerm,
-MatDate,
-OrigLTV,
-OrigCLTV,
-Borrowers,
-DTI,
-CreditScoreOrig,
-CoCreditScoreOrig,
-FstTimeHomeBuy,
-Purpose,
-PropType,
-Units,
-Occupancy,
-State,
-MSA,
-Zip,
-MiIns,
-AmortType,
-PrepayPen,
-IO,
-IOPrinDT,
-IOAmortTerm,
-DlqStatus,
-Paystring,
-ModFlag,
-MtgencCaclInsur,
-ZeroBalCode,
-ZeroBalDt,
-UPBLiq,
-RepurchDt,
-SchedPrinCur,
-TotPrinCur,
-UnschedPrinCur,
-LastPaidInstalDt,
-FC_Date,
-DispDt,
-FC_Costs,
-PropPrevCost,
-AssetRecovCost,
-MiscHoldingExpCredit,
-TaxesHoldProp,
-NetSalesProceed,
-CreditEnhanceProceeds,
-RepurchWholeProceed,
-OtherFCProceeds,
-ModNonIntUPB,
-PrincForgiveAmt,
-OrigListStartDt,
-OrigListPx,
-CurListStartDt,
-CurListPx,
-CreditScoreIss,
-CoCreditScoreIss,
-CreditScoreCur,
-CoCreditScoreCur,
-MtgeInsureType,
-ServActivity,
-CurPerModLoss,
-CumPerModLoss,
-CurCreditEventLoss,
-CumCreditEventLoss,
-SpeciaEligProgram,
-FCPrinWriteOff,
-ReloMtge,
-ZeroBalChgDt,
-LoanHoldback,
-LoanHoldbackDT,
-DlqAccurInt,
-PropvalMethod,
-HighBal,
-ARMPeriod,
-ArmProduct,
-FstPerCap,
-PerCapAdjFreq,
-PerCap,
-NextPayChngDt,
-Index,
-ArmCapStrct,
-FstIntRateCapPerc,
-PerIntRateCapPerc,
-LifeCap,
-MtgeMargin,
-BalloonInd,
-ARMPlan,
-BorrowerAsstPlan,
-HLTVRefiOption,
-DealName,
-RepurchMakeWhole,
-AltDelResol,
-AltDelResCnt,
-DeferralAmt)
-
-
-(Select
-cast(Pool as bigint),
-cast(LoanID as int),
-cast(Period as int),
-Channel,
-CASE
-    When Seller like 'Amtrust%' then 'Amtrust'
-    When Seller like 'JPMorgan%' then 'JPMorgan'
-    When Seller like 'Bank of America%' then 'BOA'
-    When Seller like 'Better%' then 'Better'
-    When Seller like 'Bishops%' then 'Bishops'
-    When Seller like 'Citi%' then 'Citi'
-    When Seller like 'First Tennesse%' then 'FTN'
-    When Seller like 'Flagstar%' then 'Flagstar'
-    When Seller like 'Ge Mortgage%' then 'GMAC'
-    When Seller like 'loanDepot%' then 'loanDepot'
-    When Seller like '%New American%' then 'NewAmFund'
-    When Seller like 'PNC%' then 'PNC'
-    When Seller like 'Penny%' then 'Pennymac'
-    When Seller like 'RBC%' then 'RBC'
-    When Seller like 'Regions%' then 'Regions'
-    When Seller like 'Suntrust%' then 'Truist'
-    When Seller like 'USAA%' then 'USAA'
-    When Seller like 'Usaa%' then 'USAA'
-    When Seller like 'Wells%' then 'Wells'
-    Else 'Other'
-END as Seller,
-
-CASE
-    When Servicer like 'Amtrust%' then 'Amtrust'
-    When Servicer like 'JPMorgan%' then 'JPMorgan'
-    When Servicer like 'Bank of America%' then 'BOA'
-    When Servicer like 'Better%' then 'Better'
-    When Servicer like 'Bishops%' then 'Bishops'
-    When Servicer like 'Citi%' then 'Citi'
-    When Servicer like 'First Tennesse%' then 'FTN'
-    When Servicer like 'Flagstar%' then 'Flagstar'
-    When Servicer like 'Ge Mortgage%' then 'GMAC'
-    When Servicer like 'GMAC%' then 'GMAC'
-    When Servicer like 'loanDepot%' then 'loanDepot'
-    When Servicer like 'PNC%' then 'PNC'
-    When Servicer like 'Penny%' then 'Pennymac'
-    When Servicer like 'RBC%' then 'RBC'
-    When Servicer like 'Regions%' then 'Regions'
-    When Servicer like 'Suntrust%' then 'Truist'
-    When Servicer like 'USAA%' then 'USAA'
-    When Servicer like 'Usaa%' then 'USAA'
-    When Servicer like 'Wells%' then 'Wells'
-    Else 'Other'
-END as Servicer,
-MasterServicer,
-OrigRate/100,
-CurRate/100,
-round(OrigUPB,2),
-round(UPBIssue,2),
-round(CurUPB,2),
-OrigTerm,
-OrigDate,
-FstPayDt,
-Age,
-RemLegalTerm,
-RemTerm,
-MatDate,
-OrigLTV/100,
-OrigCLTV/100,
-Borrowers,
-DTI/100,
-CreditScoreOrig,
-CoCreditScoreOrig,
-FstTimeHomeBuy,
-Purpose,
-PropType,
-Units,
-Occupancy,
-State,
-MSA,
-Zip,
-MiIns,
-AmortType,
-PrepayPen,
-IO,
-IOPrinDT,
-IOAmortTerm,
-DlqStatus,
-Paystring,
-ModFlag,
-MtgencCaclInsur,
-ZeroBalCode,
-ZeroBalDt,
-round(UPBLiq,2),
-RepurchDt,
-round(SchedPrinCur,2),
-round(TotPrinCur,2),
-round(UnschedPrinCur,2),
-LastPaidInstalDt,
-FC_Date,
-DispDt,
-FC_Costs,
-round(PropPrevCost,2),
-round(AssetRecovCost,2),
-round(MiscHoldingExpCredit,2),
-TaxesHoldProp,
-round(NetSalesProceed,2),
-round(CreditEnhanceProceeds,2),
-round(RepurchWholeProceed,2),
-round(OtherFCProceeds,2),
-round(ModNonIntUPB,2),
-round(PrincForgiveAmt,2),
-OrigListStartDt,
-OrigListPx,
-CurListStartDt,
-CurListPx,
-CreditScoreIss,
-CoCreditScoreIss,
-CreditScoreCur,
-CoCreditScoreCur,
-MtgeInsureType,
-ServActivity,
-CurPerModLoss,
-CumPerModLoss,
-round(CurCreditEventLoss,2),
-round(CumCreditEventLoss,2),
-SpeciaEligProgram,
-FCPrinWriteOff,
-ReloMtge,
-ZeroBalChgDt,
-LoanHoldback,
-LoanHoldbackDT,
-DlqAccurInt,
-PropvalMethod,
-HighBal,
-ARMPeriod,
-ArmProduct,
-FstPerCap,
-PerCapAdjFreq,
-PerCap,
-NextPayChngDt,
-Index,
-ArmCapStrct,
-FstIntRateCapPerc,
-PerIntRateCapPerc,
-LifeCap,
-MtgeMargin,
-BalloonInd,
-ARMPlan,
-BorrowerAsstPlan,
-HLTVRefiOption,
-DealName,
-RepurchMakeWhole,
-AltDelResol,
-AltDelResCnt,
-round(DeferralAmt,2)
-
-    from loan_staging
-Where age >=0
-    );""")
-
-with conn.cursor() as cursor:
-    data_transform_load(cursor)
-
-
-
-
-#Drop Staging Table
+# Drop Staging Table
 def drop_staging_table(cursor):
     cursor.execute("""
-    DROP TABLE IF EXISTS loan_staging CASCADE;""")
+    DROP TABLE IF EXISTS loan_staging1 CASCADE;""")
 
 
 with conn.cursor() as cursor:
     drop_staging_table(cursor)
 
-
-
-
 cur.close()
 conn.close()
+
