@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 
 #Loan variables / assumptions
-principal = 1000000000
+principal = 425000
 rate = .075
 term = 360
 prepayment_percentage = 0.05 #Prepayment expressed as a percentage of the remaining principal
@@ -18,14 +18,15 @@ flt_earn_rate = .03
 escrow_bal_float = 1600
 cts = 70
 additional_cts = 50
+setup_cost = 8
 int_escrow = .01
 int_lost_days = 10
 mult = 4.5
 price = service_fee*mult
 discount_rate = .10
 leverage = .7
-loan_count = 2800
-del_loan_count = 50
+loan_count = 1
+del_loan_count = 0
 financing_costs = .07
 
 
@@ -55,7 +56,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
         int_on_escrow = (int_escrow*escrow_bal_float/12)*loan_count
         interest_lost = prepayment*service_fee*(int_lost_days/30)
         if month == 1:
-            setup_costs = 10*loan_count
+            setup_costs = setup_cost*loan_count
         else:
             setup_costs = 0
 
@@ -66,28 +67,30 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
         msr_cashflow_leverage = (((serv_fee_cf + ancillary_fee + pandi_float + escrow_float) - (cost_to_service + add_cts + int_on_escrow + interest_lost + setup_costs))/leverage) - (begin_bal*price*(financing_costs/12))
         disc_msr_cashflow = msr_cashflow / (1 + discount_rate / 12) ** month
         wtd_cashflow = disc_msr_cashflow * month
-        ffinancing_costs = ((begin_bal*(financing_costs/12))*price)
+        financing_cost = ((begin_bal*(financing_costs/12))*price)
 
         amortization_schedule.append([month, total_payment, monthly_payment, prepayment, interest_payment, principal_payment,
                                       remaining_principal, serv_fee_cf, ancillary_fee, pandi_float, escrow_float, cost_to_service, add_cts,
-                                      int_on_escrow, interest_lost, setup_costs, begin_bal, msr_cashflow, msr_cashflow_leverage, disc_msr_cashflow, wtd_cashflow, ffinancing_costs])
+                                      int_on_escrow, interest_lost, setup_costs, begin_bal, msr_cashflow, msr_cashflow_leverage, disc_msr_cashflow, wtd_cashflow, financing_cost])
 
         column_names = ['Month', 'total_payment', 'monthly_payment', 'Prepayment', 'Interest', 'Principal', 'End Balance',
-                    'Service Fee', 'Ancillary',
-                    'PandI Float', 'Escrow Float', 'CTS', 'Additional_CTS', 'Int Escrow', 'Int Lost', 'Setup Costs',
-                    'Beginning Bal', 'Total Cash Flow', 'Total Cash Flow2',
-                    'Disc MSR Cashflow', 'Wtd_Cashflow', 'ffinancing_costs'
+                    'Service Fee', 'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Additional_CTS', 'Int Escrow', 'Int Lost', 'Setup Costs',
+                    'Beginning Bal', 'Total Cash Flow', 'Total Cash Flow Leverage',
+                    'Disc MSR Cashflow', 'Wtd_Cashflow', 'Financing_cost'
                     ]
     df = pd.DataFrame(amortization_schedule, columns = column_names)
 
-#Uncomment and change path to export csv file
+
+
+
+#Exports Cash flows to csv file
     df.to_csv("C:/Users/colem/msr_cash_flows.csv",
               columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
                        'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Additional_CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
-                       'Total Cash Flow', 'Total Cash Flow2', 'Disc MSR Cashflow', 'ffinancing_costs'], index=False)
+                       'Total Cash Flow', 'Total Cash Flow Leverage', 'Disc MSR Cashflow', 'Financing_cost'], index=False, float_format='${:,.0f}'.format)
 
 
-#Terminal Output Summary Table 
+#Terminal Output Summary Table
     title = f"{'         PMSR Return Summary        '}"
     line =  f"{'------------------------------------'}"
     print(title)
@@ -108,7 +111,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     px2= []
     loan_price = price * - principal
     px2.append(loan_price)
-    px2.extend(df['Total Cash Flow2'])
+    px2.extend(df['Total Cash Flow Leverage'])
     irr2 = npf.irr(px2)*12
     print("ROE: {:.2%}".format(irr2))
 
