@@ -129,22 +129,6 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
 
 
 
-#Plot is loan amortization including prepayments only
-# def plot_loan_amortization_schedule(amortization_schedule):
-#     months = [entry[0] for entry in amortization_schedule]
-#     remaining_principal = [entry[6] for entry in amortization_schedule]
-#
-#     plt.figure(figsize=(10, 6))
-#     plt.plot(months, remaining_principal, color='b', linewidth=2, label='Remaining Principal')
-#     plt.plot(months, market_value, color='g', linewidth=2, label='Market Value')
-#     plt.xlabel('Months')
-#     plt.ylabel('Loan Balance ($)')
-#     plt.title('Mortgage Loan Amortization Schedule with Prepayment')
-#     plt.legend()
-#     plt.grid(True)
-#     plt.show()
-#
-
 def plot_loan_amortization_schedule(amortization_schedule):
     months = [entry[0] for entry in amortization_schedule]
     remaining_principal = [entry[6] for entry in amortization_schedule]
