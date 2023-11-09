@@ -16,18 +16,18 @@ ancillary = 10
 pandi_flt = 13
 flt_earn_rate = .03
 escrow_bal_float = 1600
-cts = 70
+cts = 75
 additional_cts = 50
 setup_cost = 8
 int_escrow = .01
 int_lost_days = 10
-mult = 4.5
+mult = 4.4
 price = service_fee*mult
-discount_rate = .12
+discount_rate = .10
 leverage = .7
 loan_count = 1
 del_loan_count = 0
-financing_costs = .07
+financing_costs = .068
 
 
 def calculate_payment(principal, rate, term):
@@ -88,9 +88,9 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     df.to_csv("C:/Users/colem/msr_cash_flows.csv",
               columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
                        'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Additional_CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
-                       'Total Cash Flow', 'Total Cash Flow Leverage', 'Disc MSR Cashflow', 'Financing_cost', 'Total Disc MSR Cashflow', 'Market Value'], index=False, float_format='${:,.0f}'.format)
+                       'Total Cash Flow', 'Total Cash Flow Leverage', 'Disc MSR Cashflow', 'Financing_cost', 'Market Value'], index=False, float_format='${:,.0f}'.format)
 
-
+    print(df)
 #Terminal Output Summary Table
     title = f"{'         PMSR Return Summary        '}"
     line =  f"{'------------------------------------'}"
@@ -128,22 +128,39 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     return amortization_schedule
 
 
+
 #Plot is loan amortization including prepayments only
+# def plot_loan_amortization_schedule(amortization_schedule):
+#     months = [entry[0] for entry in amortization_schedule]
+#     remaining_principal = [entry[6] for entry in amortization_schedule]
+#
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(months, remaining_principal, color='b', linewidth=2, label='Remaining Principal')
+#     plt.plot(months, market_value, color='g', linewidth=2, label='Market Value')
+#     plt.xlabel('Months')
+#     plt.ylabel('Loan Balance ($)')
+#     plt.title('Mortgage Loan Amortization Schedule with Prepayment')
+#     plt.legend()
+#     plt.grid(True)
+#     plt.show()
+#
+
 def plot_loan_amortization_schedule(amortization_schedule):
     months = [entry[0] for entry in amortization_schedule]
     remaining_principal = [entry[6] for entry in amortization_schedule]
+    fig, ax1 = plt.subplots(figsize=(10, 6))
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(months, remaining_principal, color='b', linewidth=2, label='Remaining Principal')
-    plt.xlabel('Months')
-    plt.ylabel('Loan Balance ($)')
-    plt.title('Mortgage Loan Amortization Schedule with Prepayment')
-    plt.legend()
-    plt.grid(True)
+    # Plot Remaining Principal on the left y-axis (ax1) as a line plot
+    ax1.plot(months, remaining_principal, color='b', linewidth=2, label='Remaining Principal')
+    ax1.set_xlabel('Months')
+    ax1.set_ylabel('Remaining Principal ($)', color='b')
+    ax1.tick_params(axis='y', labelcolor='b')
+    plt.title('Loan Amortization Schedule with Remaining Principal and Market Value')
+    fig.tight_layout()
     plt.show()
 
 
 
-
 amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee)
+
 plot_loan_amortization_schedule(amortization_schedule)
