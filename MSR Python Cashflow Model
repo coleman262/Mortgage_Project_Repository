@@ -88,7 +88,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     df.to_csv("C:/Users/colem/msr_cash_flows.csv",
               columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
                        'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Additional_CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
-                       'Total Cash Flow', 'Total Cash Flow Leverage', 'Disc MSR Cashflow', 'Financing_cost', 'Market Value'], index=False, float_format='${:,.0f}'.format)
+                       'Total Cash Flow',  'Disc MSR Cashflow', 'Financing_cost', 'Market Value'], index=False, float_format='${:,.0f}'.format)
 
     print(df)
 #Terminal Output Summary Table
