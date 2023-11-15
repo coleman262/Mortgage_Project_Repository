@@ -1,3 +1,7 @@
+#Chat GPT4 API Key = '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'
+
+
+
 import numpy as np
 import pandas as pd
 import torch
@@ -27,7 +31,7 @@ class Time2Vec(nn.Module):
 
 # Modified FinancialDataset Class
 class FinancialDataset(Dataset):
-    def __init__(self, data, sequence_length=180, prediction_length=20, time2vec_dim=2):
+    def __init__(self, data, sequence_length=60, prediction_length=20, time2vec_dim=2):
         self.data = data
         self.sequence_length = sequence_length
         self.prediction_length = prediction_length
@@ -64,8 +68,8 @@ class EnhancedRNN(nn.Module):
 db_host = 'localhost'
 db_name = 'postgres'
 db_user = 'postgres'
-db_password = 'password123$'
-table_name = 'model_data_daily'
+db_password = 'xxxxxx'
+table_name = 'xxxxxxxx'
 
 # Database connection URL
 db_url = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_name}'
