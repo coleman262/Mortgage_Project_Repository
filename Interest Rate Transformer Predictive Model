@@ -27,7 +27,7 @@ class Time2Vec(nn.Module):
 
 # FinancialDataset determines the structure of the dataset for processing
 class FinancialDataset(Dataset):
-    def __init__(self, data, sequence_length=100, prediction_length=60, time2vec_dim=2):
+    def __init__(self, data, sequence_length=30, prediction_length=60, time2vec_dim=2):
         self.data = data
         self.sequence_length = sequence_length
         self.prediction_length = prediction_length
@@ -37,29 +37,14 @@ class FinancialDataset(Dataset):
         return len(self.data) - self.sequence_length - self.prediction_length
 
     def __getitem__(self, idx):
-        # Fetch the data
         time_feature = torch.Tensor(self.data.iloc[idx:idx + self.sequence_length][['index']].values.astype(np.float32))
+        time_encoded = self.time2vec(time_feature / (24 * 60 * 60))
         additional_features = torch.Tensor(
             self.data.iloc[idx:idx + self.sequence_length][['t10y2y', 'usrec', 'dff']].values.astype(np.float32))
-
-        # Check if the sequence is shorter than expected and pad if necessary
-        if len(time_feature) < self.sequence_length:
-            padding_size = self.sequence_length - len(time_feature)
-            time_feature_padded = pad_sequence([time_feature, torch.zeros(padding_size, 1)], batch_first=True)
-            additional_features_padded = pad_sequence(
-                [additional_features, torch.zeros(padding_size, additional_features.shape[1])], batch_first=True)
-        else:
-            time_feature_padded = time_feature
-            additional_features_padded = additional_features
-
-        # Process the features
-        time_encoded = self.time2vec(time_feature_padded / (24 * 60 * 60))
-        X = torch.cat((time_encoded, additional_features_padded), dim=1)
-
-        # Output
-        y = torch.Tensor(self.data.iloc[idx + self.sequence_length:idx + self.sequence_length + self.prediction_length][
-                             ['dgs10']].values.astype(np.float32))
+        X = torch.cat((time_encoded, additional_features), dim=1)
+        y = torch.Tensor(self.data.iloc[idx + self.sequence_length:idx + self.sequence_length + self.prediction_length][['dgs10']].values.astype(np.float32))
         return X, y.squeeze(1)
+
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=13403):
@@ -90,22 +75,6 @@ class EnhancedTransformer(nn.Module):
         x = self.pos_encoder(x)
         out = self.transformer_encoder(x)
         out = self.fc(out[-1, :, :])  # Taking the output of the last sequence element
-        return out
-
-    def generate_square_subsequent_mask(self, sz):
-        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-        return mask
-
-    def forward(self, x):
-        x = self.pos_encoder(x)
-
-        # Create a mask for the padding - assuming padding value is 0
-        padding_mask = (x == 0).all(dim=2)
-        mask = self.generate_square_subsequent_mask(x.size(0))
-
-        out = self.transformer_encoder(x, mask=mask, src_key_padding_mask=padding_mask)
-        out = self.fc(out[-1, :, :])
         return out
 
 # Database connection parameters
@@ -161,7 +130,7 @@ try:
     test_data[['t10y2y', 'usrec', 'dff']] = scaler_features.transform(test_data[['t10y2y', 'usrec', 'dff']])
 
     # Setting sequence length, prediction length, and time2vec dimension
-    sequence_length = 20
+    sequence_length = 30
     prediction_length = 60
     time2vec_dim = 7
 
@@ -178,7 +147,7 @@ try:
     train_dataset = FinancialDataset(train_data, sequence_length, prediction_length, time2vec_dim)
     test_dataset = FinancialDataset(test_data, sequence_length, prediction_length, time2vec_dim)
 
-    batch_size = 32
+    batch_size = 6
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
@@ -253,7 +222,7 @@ try:
 
         plt.xlabel('Date')
         plt.ylabel('dgs10')
-        plt.title('Model Predictions - 500 / 12 seq')
+        plt.title('Model Predictions - 30 seq')
         plt.legend()
         plt.grid(True)
         plt.show()
