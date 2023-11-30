@@ -81,8 +81,8 @@ class EnhancedTransformer(nn.Module):
 db_host = 'localhost'
 db_name = 'postgres'
 db_user = 'postgres'
-db_password = 'password123$'
-table_name = 'model_data_daily'
+db_password = 'xxxxxxxxxx'
+table_name = 'xxxxxxxxxx'
 
 # Database connection URL
 db_url = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_name}'
