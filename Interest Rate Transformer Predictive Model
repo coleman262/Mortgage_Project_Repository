@@ -1,3 +1,6 @@
+#Certain script elements and model tuning precision purposely left out - Jon Coleman 
+
+
 import numpy as np
 import pandas as pd
 import torch
