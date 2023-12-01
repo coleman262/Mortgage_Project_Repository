@@ -4,14 +4,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sqlalchemy import create_engine
 import matplotlib.pyplot as plt
 
 
 # Time2Vec class timestamps the data for the encoder
 class Time2Vec(nn.Module):
-    def __init__(self, kernel_size=10):
+    def __init__(self, kernel_size=1):
         super(Time2Vec, self).__init__()
         self.kernel_size = kernel_size
         self.wb = nn.Linear(1, 1)  # Linear component
@@ -27,7 +27,7 @@ class Time2Vec(nn.Module):
 
 # FinancialDataset determines the structure of the dataset for processing
 class FinancialDataset(Dataset):
-    def __init__(self, data, sequence_length=200, prediction_length=5, time2vec_dim=2):
+    def __init__(self, data, sequence_length=100, prediction_length=12, time2vec_dim=1):
         self.data = data
         self.sequence_length = sequence_length
         self.prediction_length = prediction_length
@@ -37,17 +37,18 @@ class FinancialDataset(Dataset):
         return len(self.data) - self.sequence_length - self.prediction_length
 
     def __getitem__(self, idx):
-        time_feature = torch.Tensor(self.data.iloc[idx:idx + self.sequence_length][['index']].values.astype(np.float32))
-        time_encoded = self.time2vec(time_feature / (24 * 60 * 60))
+        time_feature = torch.Tensor(
+            self.data.iloc[idx:idx + self.sequence_length][['index']].values.astype(np.float32))
+        time_encoded = self.time2vec(time_feature)
         additional_features = torch.Tensor(
-            self.data.iloc[idx:idx + self.sequence_length][['t10y2y', 'usrec', 'dff']].values.astype(np.float32))
+            self.data.iloc[idx:idx + self.sequence_length][['t10y2y', 'usrec', 'dff', 'money_demand', 't10y2y_30wma']].values.astype(np.float32))
         X = torch.cat((time_encoded, additional_features), dim=1)
         y = torch.Tensor(self.data.iloc[idx + self.sequence_length:idx + self.sequence_length + self.prediction_length][['dgs10']].values.astype(np.float32))
         return X, y.squeeze(1)
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.1, max_len=13403):
+    def __init__(self, d_model, dropout=0.1, max_len=10000):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -62,31 +63,32 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[:x.size(0)]
         return self.dropout(x)
 
-        # def forward(self, x):
-    #     x = x + self.pe[:x.size(0)]
-    #     return self.dropout(x)
-
 # Enhanced Transformer Class
 class EnhancedTransformer(nn.Module):
-    def __init__(self, input_dim, hidden_dim, prediction_length, time2vec_dim=10, num_layers=8, dropout=0.5):
+    def __init__(self, input_dim, hidden_dim, prediction_length, time2vec_dim=1, num_layers=1, dropout=0.1):
         super(EnhancedTransformer, self).__init__()
+        self.time2vec = Time2Vec(time2vec_dim)
         self.pos_encoder = PositionalEncoding(input_dim, dropout)
-        transformer_layer = nn.TransformerEncoderLayer(d_model=input_dim, nhead=2, dim_feedforward=hidden_dim, dropout=dropout, batch_first=True)
+        transformer_layer = nn.TransformerEncoderLayer(d_model=input_dim, nhead=2, dim_feedforward=hidden_dim,
+                                                       dropout=dropout, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(transformer_layer, num_layers=num_layers)
         self.fc = nn.Linear(input_dim, prediction_length)
 
     def forward(self, x):
+        time_feature = x[:, :, 0].unsqueeze(-1)
+        time_encoded = self.time2vec(time_feature)
+        x = torch.cat([time_encoded, x[:, :, 1:]], dim=-1)
         x = self.pos_encoder(x)
         out = self.transformer_encoder(x)
-        out = self.fc(out[-1, :, :])  # Taking the output of the last sequence element
+        out = self.fc(out[-1, :, :])
         return out
 
 # Database connection parameters
 db_host = 'localhost'
 db_name = 'postgres'
 db_user = 'postgres'
-db_password = 'xxxxxxxxxxxxxx'
-table_name = 'model_data_daily'
+db_password = 'xxxxxxxxxxxxx'
+table_name = 'model_data_monthly'
 
 # Database connection URL
 db_url = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_name}'
@@ -98,7 +100,7 @@ engine = create_engine(db_url)
 try:
     # SQL query to include additional features
     sql_query = f"""
-        SELECT "index", "dgs10", "t10y2y", "usrec", "dff"
+        SELECT "index", "dgs10", [OTHER DATA FEATURES]
         FROM {table_name}
         ORDER BY "index";
     """
@@ -109,11 +111,10 @@ try:
     if len(data) == 0:
         raise Exception("No data fetched from the database")
 
-    # Preserve original dates for plotting
+    # Preserve original dates for plotting and filter data 
     data['date'] = pd.to_datetime(data['index'])
-    # Convert 'index' from date to timestamp for model processing
-    data['index'] = data['date'].astype(np.int64) // 10 ** 9
-    data['index'] = (data['index'] - data['index'].min()) / (24 * 60 * 60)
+    start_date = data['date'].min()
+    data['index'] = data['date'].apply(lambda x: (x.year - start_date.year) * 12 + x.month - start_date.month)
 
     # Splitting the data into training and test sets
     split_ratio = 0.8
@@ -122,24 +123,24 @@ try:
     test_data = data.iloc[split_idx:].copy()
 
     # Scaling the data
-    scaler_dgs10 = StandardScaler()
-    scaler_features = StandardScaler()
+    scaler_dgs10 = MinMaxScaler(feature_range=(-1, 1))
+    scaler_features = MinMaxScaler(feature_range=(-1, 1))
 
     # Scale the 'dgs10' feature
     train_data['dgs10'] = scaler_dgs10.fit_transform(train_data[['dgs10']])
     test_data['dgs10'] = scaler_dgs10.transform(test_data[['dgs10']])
 
     # Scale the additional features
-    train_data[['t10y2y', 'usrec', 'dff']] = scaler_features.fit_transform(train_data[['t10y2y', 'usrec', 'dff']])
-    test_data[['t10y2y', 'usrec', 'dff']] = scaler_features.transform(test_data[['t10y2y', 'usrec', 'dff']])
+    train_data[[OTHER DATA FEATURES]] = scaler_features.fit_transform(train_data[[OTHER DATA FEATURES]])
+    test_data[[OTHER DATA FEATURES]] = scaler_features.transform(test_data[[OTHER DATA FEATURES]])
 
     # Setting sequence length, prediction length, and time2vec dimension
-    sequence_length = 5
-    prediction_length = 20
-    time2vec_dim = 7
+    sequence_length = 60
+    prediction_length = 12
+    time2vec_dim = 1
 
     # Number of additional features
-    num_additional_features = 3
+    num_additional_features = 5
 
     # Correct calculation of input dimension
     input_dim = time2vec_dim + num_additional_features
@@ -151,19 +152,19 @@ try:
     train_dataset = FinancialDataset(train_data, sequence_length, prediction_length, time2vec_dim)
     test_dataset = FinancialDataset(test_data, sequence_length, prediction_length, time2vec_dim)
 
-    batch_size = 6
+    batch_size = 1
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Model, loss function, and optimizer
     model = EnhancedTransformer(input_dim, hidden_dim, prediction_length, time2vec_dim)
     criterion = nn.MSELoss()
-    #criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+    #optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
 
 
     # Training loop
-    num_epochs = 10
+    num_epochs = 50
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
@@ -179,55 +180,82 @@ try:
         print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(train_loader):.4f}')
 
     model.eval()
+    model.eval()
     with torch.no_grad():
-        # Extract the last sequence of data from the entire dataset
-        last_sequence_idx = len(data) - sequence_length
-        last_sequence = data.iloc[last_sequence_idx:last_sequence_idx + sequence_length]
+        # Initialize the sequence with the last part of the training data
+        last_train_sequence = train_data.iloc[-sequence_length:].copy()
+        sequence_input = last_train_sequence
 
-        # Prepare the sequence for the model
-        time_feature = torch.Tensor(last_sequence[['index']].values.astype(np.float32))
-        time_encoded = train_dataset.time2vec(time_feature)
-        additional_features = torch.Tensor(last_sequence[['t10y2y', 'usrec', 'dff']].values.astype(np.float32))
-        last_sequence_X = torch.cat((time_encoded, additional_features), dim=1)
+        # Predictions on Test Data
+        test_predictions = []
+        for i in range(len(test_data)):
+            # Prepare the sequence for prediction
+            time_feature = torch.Tensor(sequence_input[['index']].values.astype(np.float32))
+            time_encoded = train_dataset.time2vec(time_feature)
+            additional_features = torch.Tensor(sequence_input[[OTHER DATA FEATURES]].values.astype(np.float32))
+            sequence_X = torch.cat((time_encoded, additional_features), dim=1)
+            sequence_X = sequence_X.unsqueeze(0).permute(1, 0, 2)
 
-        # Reshape to match batch size of 1
-        last_sequence_X = last_sequence_X.unsqueeze(0)
+            # Make a prediction
+            output = model(sequence_X)
+            prediction = output.numpy().flatten()
 
-        # Predicting forward
-        output = model(last_sequence_X)
-        original_predictions = scaler_dgs10.inverse_transform(output.numpy()).flatten()
-        train_data['dgs10'] = scaler_dgs10.inverse_transform(train_data[['dgs10']])
+            # Update the sequence for the next prediction
+            next_row = pd.DataFrame([test_data.iloc[i]])
+            sequence_input = pd.concat([sequence_input.iloc[1:], next_row], ignore_index=True)
+
+            # Store the prediction
+            test_predictions.append(prediction)
+
+        # Flatten the predictions and inverse transform
+        test_predictions = np.array(test_predictions).flatten()
+        test_predictions = scaler_dgs10.inverse_transform(test_predictions.reshape(-1, 1)).flatten()
+
+        # Correct the length of the predictions to match the test data
+        test_predictions = test_predictions[:len(test_data)]
+
+        # Assign predictions to the test data
+        test_data['Predicted_dgs10'] = test_predictions
+
+        # Inverse transform the original dgs10 values in test_data for comparison
         test_data['dgs10'] = scaler_dgs10.inverse_transform(test_data[['dgs10']])
 
-        # Scaling back the additional features for train and test data
-        train_data[['t10y2y', 'usrec', 'dff']] = scaler_features.inverse_transform(train_data[['t10y2y', 'usrec', 'dff']])
-        test_data[['t10y2y', 'usrec', 'dff']] = scaler_features.inverse_transform(test_data[['t10y2y', 'usrec', 'dff']])
+        # Future Predictions
+        last_sequence_idx = len(data) - sequence_length
+        print(last_sequence_idx)
+        last_sequence = data.iloc[last_sequence_idx:last_sequence_idx + sequence_length]
+        print(last_sequence)
 
+        time_feature = torch.Tensor(last_sequence[['index']].values.astype(np.float32))
+        time_encoded = train_dataset.time2vec(time_feature)
+        additional_features = torch.Tensor(last_sequence[[OTHER DATA FEATURES]].values.astype(np.float32))
+        last_sequence_X = torch.cat((time_encoded, additional_features), dim=1)
+        last_sequence_X = last_sequence_X.unsqueeze(0)
 
+        output = model(last_sequence_X)
+        original_predictions = scaler_dgs10.inverse_transform(output.numpy()).flatten()
 
-        # Generating future dates starting from the last date in the actual dataset
+        # Generating future dates
         last_date = pd.to_datetime(data['date'].iloc[-1])
         future_dates = [last_date + pd.Timedelta(days=i) for i in range(1, prediction_length + 1)]
-        print(future_dates)
 
-        # Creating DataFrame for the predictions
-        original_predictions = original_predictions[:len(future_dates)]
-        future_prediction_df = pd.DataFrame({'Date': future_dates, 'Predicted_dgs10': original_predictions})
+        future_prediction_df = pd.DataFrame(
+            {'Date': future_dates, 'Predicted_dgs10': original_predictions[:len(future_dates)]})
         print("Future Predictions:")
         print(future_prediction_df)
 
-
         # Plotting
-
         plt.figure(figsize=(12, 6))
-        plt.plot(data['date'], data['dgs10'], label='Actual Data', color='blue')  # Plotting original data
-
+        plt.plot(data['date'], data['dgs10'], label='Actual Data', color='blue')
         plt.plot(test_data['date'], test_data['dgs10'], label='Test Data', color='purple')
-        plt.plot(future_dates, original_predictions, label='Future Projections', color='green')
+        plt.plot(test_data['date'], test_data['Predicted_dgs10'], label='Test Predictions', color='red',
+                 linestyle='dashed')
+        plt.plot(future_prediction_df['Date'], future_prediction_df['Predicted_dgs10'], label='Future Projections',
+                 color='green')
 
         plt.xlabel('Date')
         plt.ylabel('dgs10')
-        plt.title('Model Predictions - Seq 60 / 30 Seq / 20 Pred')
+        plt.title('Model Predictions')
         plt.legend()
         plt.grid(True)
         plt.show()
