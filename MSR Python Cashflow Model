@@ -36,6 +36,41 @@ def calculate_payment(principal, rate, term):
     monthly_payment = (principal * monthly_interest_rate) / (1 - (1 + monthly_interest_rate) ** -total_payments)
     return monthly_payment
 
+def calculate_market_value(principal, rate, term, prepayment_percentage, service_fee, discount_rate):
+    monthly_payment = calculate_payment(principal, rate, term)
+    remaining_principal = principal
+    market_value = 0
+
+    for month in range(1, term + 1):
+        interest_payment = remaining_principal * rate / 12
+        principal_payment = monthly_payment - interest_payment
+        prepayment = remaining_principal * (1 - (1 - prepayment_percentage)**(1/12))
+        total_payment = monthly_payment + prepayment
+        remaining_principal -= (principal_payment + prepayment)
+
+        cash_flow = total_payment - service_fee * total_payment
+        discounted_cash_flow = cash_flow / (1 + discount_rate / 12) ** month
+        market_value += discounted_cash_flow
+
+        if remaining_principal <= 0:
+            break
+
+    return market_value
+
+def effective_duration_calculation(principal, rate, term, prepayment_percentage, service_fee, delta_y, discount_rate):
+    V0 = calculate_market_value(principal, rate, term, prepayment_percentage, service_fee, discount_rate)
+    V_plus = calculate_market_value(principal, rate + delta_y, term, prepayment_percentage, service_fee, discount_rate)
+    V_minus = calculate_market_value(principal, rate - delta_y, term, prepayment_percentage, service_fee, discount_rate)
+    effective_duration = (V_minus - V_plus) / (2 * V0 * delta_y)
+    return effective_duration
+
+def effective_convexity_calculation(principal, rate, term, prepayment_percentage, service_fee, delta_y, discount_rate):
+    V0 = calculate_market_value(principal, rate, term, prepayment_percentage, service_fee, discount_rate)
+    V_plus = calculate_market_value(principal, rate + delta_y, term, prepayment_percentage, service_fee, discount_rate)
+    V_minus = calculate_market_value(principal, rate - delta_y, term, prepayment_percentage, service_fee, discount_rate)
+    effective_convexity = (V_minus + V_plus - 2 * V0) / (2 * V0 * delta_y ** 2)
+    return effective_convexity
+
 def loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee):
     monthly_payment = calculate_payment(principal, rate, term)
     remaining_principal = principal
@@ -84,6 +119,13 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
 
     df['Market Value'] = total_disc_msr_cashflow - df['Total Disc MSR Cashflow']  # Calculate the new column
 
+    delta_y = 0.01  # Change in yield for effective duration calculation, example: 0.01 for 1%
+    effective_duration = effective_duration_calculation(principal, rate, term, prepayment_percentage, service_fee, delta_y, discount_rate)
+    effective_duration = effective_duration_calculation(principal, rate, term, prepayment_percentage, service_fee,
+                                                        delta_y, discount_rate)
+    effective_convexity = effective_convexity_calculation(principal, rate, term, prepayment_percentage, service_fee,
+                                                          delta_y, discount_rate)
+
     #Exports Cash flows to csv file
     df.to_csv("C:/Users/colem/msr_cash_flows.csv",
               columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
@@ -91,6 +133,8 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
                        'Total Cash Flow',  'Disc MSR Cashflow', 'Financing_cost', 'Market Value'], index=False, float_format='${:,.0f}'.format)
 
     print(df)
+
+
 #Terminal Output Summary Table
     title = f"{'         PMSR Return Summary        '}"
     line =  f"{'------------------------------------'}"
@@ -116,11 +160,9 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     irr2 = npf.irr(px2)*12
     print("ROE: {:.2%}".format(irr2))
 
-
-    macaulay_duration = ((df['Wtd_Cashflow']/(loan_price*-1)).sum())/12
-    print(f"Macaulay Duration: {macaulay_duration:.3}")
-    mod_duration = macaulay_duration/(1+irr)
-    print(f"Modified Duration: {mod_duration:.3}")
+    #print(f"Option Adjusted Spread (OAS): {oas:.3f}")
+    print(f"Effective Duration: {effective_duration:.3f}")
+    print(f"Effective Convexity: {effective_convexity:.3f}")
 
     line2 = f"{'------------------------------------'}"
     print(line2)
