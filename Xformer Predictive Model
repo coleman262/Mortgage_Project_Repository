@@ -141,12 +141,12 @@ try:
     time2vec_dim = 1
 
     # Number of additional features
-    num_additional_features = 5
+    num_additional_features = TBD
 
     # Correct calculation of input dimension
     input_dim = time2vec_dim + num_additional_features
 
-    # Define the hidden dimension for the RNN
+    # Define the hidden dimension
     hidden_dim = 64
 
     # Creating datasets and dataloaders
