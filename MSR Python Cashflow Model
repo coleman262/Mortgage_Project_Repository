@@ -66,6 +66,7 @@ def effective_duration_calculation(principal, rate, term, prepayment_percentage,
     return effective_duration
 
 
+
 def loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee):
     monthly_payment = calculate_payment(principal, rate, term)
     remaining_principal = principal
@@ -115,7 +116,6 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     df['Market Value'] = total_disc_msr_cashflow - df['Total Disc MSR Cashflow']  # Calculate the new column
 
     delta_y = 0.01  # Change in yield for effective duration calculation, example: 0.01 for 1%
-    effective_duration = effective_duration_calculation(principal, rate, term, prepayment_percentage, service_fee, delta_y, discount_rate)
     effective_duration = effective_duration_calculation(principal, rate, term, prepayment_percentage, service_fee,
                                                         delta_y, discount_rate)
 
