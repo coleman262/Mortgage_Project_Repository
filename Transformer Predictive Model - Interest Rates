@@ -88,7 +88,7 @@ class EnhancedTransformer(nn.Module):
 db_host = 'localhost'
 db_name = 'postgres'
 db_user = 'postgres'
-db_password = 'password123$'
+db_password = 'xxxxxxxxxxx'
 table_name = 'model_data_monthly'
 
 # Database connection URL
