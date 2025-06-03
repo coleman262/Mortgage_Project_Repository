@@ -5,7 +5,7 @@ import numpy_financial as npf
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-
+from scipy.optimize import root_scalar
 
 #Loan variables / Assumptions
 principal = 1000000
@@ -67,6 +67,13 @@ def effective_duration_calculation(principal, rate, term, prepayment_percentage,
     V_minus = calculate_market_value(principal, rate - delta_y, term, prepayment_percentage, service_fee, discount_rate)
     effective_duration = (V_minus - V_plus) / (2 * V0 * delta_y) * -1
     return effective_duration
+
+def calculate_oas(cashflows, months, base_curve, market_price):
+    def present_value_with_spread(oas):
+        return sum(cf / (1 + (r + oas)/12)**t for cf, t, r in zip(cashflows, months, base_curve)) - market_price
+
+    result = root_scalar(present_value_with_spread, bracket=[-0.05, 0.20], method='brentq')
+    return result.root if result.converged else None
 
 
 
@@ -150,18 +157,28 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     print("Price: {:.3%}".format(price))
     print("ROA: {:.2%}".format(irr))
 
-    px2= []
-    loan_price = price * - principal
+    px2 = []
     px2.append(loan_price)
     px2.extend(df['Total Cash Flow Leverage'])
     irr2 = npf.irr(px2)*12
     print("ROE: {:.2%}".format(irr2))
 
-    #print(f"Option Adjusted Spread (OAS): {oas:.3f}")
+    # === TRUE OAS CALCULATION ===
+    cashflows = df['Disc MSR Cashflow'].values
+    months = df['Month'].values
+    base_curve = [discount_rate] * len(months)
+    market_price = price * principal  # MSR price
+
+    oas = calculate_oas(cashflows, months, base_curve, market_price)
+
+    oas = calculate_oas(cashflows, months, base_curve, market_price)
+    if oas is not None:
+        print(f"Option Adjusted Spread (OAS): {oas:.2%}")
+    else:
+        print("OAS calculation failed.")
+
     print(f"Effective Duration: {effective_duration:.3f}")
-
-
-    line2 = f"{'------------------------------------'}"
+    line2 = f"{'------------------------------------'}"  # ADD THIS LINE
     print(line2)
 
     return amortization_schedule
@@ -181,7 +198,7 @@ def plot_loan_amortization_schedule(amortization_schedule):
     plt.title('Loan Amortization Schedule with Remaining Principal and Market Value')
     fig.tight_layout()
     plt.show()
-matplotlib.use('TkAgg') 
+matplotlib.use('TkAgg')
 
 
 amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee)
