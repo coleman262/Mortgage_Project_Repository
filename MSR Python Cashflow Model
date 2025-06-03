@@ -27,10 +27,10 @@ price = service_fee*mult
 
 
 discount_rate = .08
-leverage = .72
+leverage = .70
 loan_count = 1
 del_loan_count = 0
-financing_costs = .065
+financing_costs = .08
 
 
 def calculate_payment(principal, rate, term):
