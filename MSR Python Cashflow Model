@@ -3,31 +3,34 @@
 import numpy as np
 import numpy_financial as npf
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 
 
-#Loan variables / assumptions
-principal = 425000
-rate = .075
+#Loan variables / Assumptions
+principal = 1000000
+rate = .07
 term = 360
-prepayment_percentage = 0.05 #Prepayment expressed as a percentage of the remaining principal
+prepayment_percentage = 0.04 #Prepayment expressed as a percentage of the remaining principal
 service_fee = .0025
 ancillary = 10
 pandi_flt = 13
-flt_earn_rate = .03
+flt_earn_rate = .05
 escrow_bal_float = 1600
 cts = 75
 additional_cts = 50
 setup_cost = 8
-int_escrow = .01
+int_escrow = .05
 int_lost_days = 10
-mult = 4.4
+mult = 4.0
 price = service_fee*mult
+
+
 discount_rate = .10
-leverage = .7
+leverage = .72
 loan_count = 1
 del_loan_count = 0
-financing_costs = .068
+financing_costs = .065
 
 
 def calculate_payment(principal, rate, term):
@@ -121,7 +124,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
 
 
     #Exports Cash flows to csv file
-    df.to_csv("C:/Users/colem/msr_cash_flows.csv",
+    df.to_csv("C:/Users/colem/msr_cash_flows2.csv",
               columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
                        'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Additional_CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
                        'Total Cash Flow',  'Disc MSR Cashflow', 'Financing_cost', 'Market Value'], index=False, float_format='${:,.0f}'.format)
@@ -178,7 +181,7 @@ def plot_loan_amortization_schedule(amortization_schedule):
     plt.title('Loan Amortization Schedule with Remaining Principal and Market Value')
     fig.tight_layout()
     plt.show()
-
+matplotlib.use('TkAgg') 
 
 
 amortization_schedule = loan_amortization_schedule(principal, rate, term, prepayment_percentage, service_fee)
