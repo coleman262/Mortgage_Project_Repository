@@ -26,7 +26,7 @@ mult = 4.0
 price = service_fee*mult
 
 
-discount_rate = .10
+discount_rate = .08
 leverage = .72
 loan_count = 1
 del_loan_count = 0
