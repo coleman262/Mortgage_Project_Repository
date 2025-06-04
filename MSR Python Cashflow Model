@@ -8,29 +8,30 @@ import matplotlib.pyplot as plt
 from scipy.optimize import root_scalar
 
 #Loan variables / Assumptions
-principal = 1000000
-rate = .07
+principal = 500000
+rate = .06
 term = 360
-prepayment_percentage = 0.04 #Prepayment expressed as a percentage of the remaining principal
+prepayment_percentage = 0.04   #Prepayment expressed as a percentage of the remaining principal
 service_fee = .0025
 ancillary = 10
-pandi_flt = 13
-flt_earn_rate = .05
+pandi_flt = 20
+
+flt_earn_rate = .03
 escrow_bal_float = 1600
-cts = 75
+cts = 70
 additional_cts = 50
-setup_cost = 8
-int_escrow = .05
+setup_cost = 10
+int_escrow = .01
 int_lost_days = 10
-mult = 4.0
+mult = 4.75
 price = service_fee*mult
 
 
-discount_rate = .08
+discount_rate = .10
 leverage = .70
 loan_count = 1
 del_loan_count = 0
-financing_costs = .08
+financing_costs = .07
 
 
 def calculate_payment(principal, rate, term):
@@ -68,12 +69,6 @@ def effective_duration_calculation(principal, rate, term, prepayment_percentage,
     effective_duration = (V_minus - V_plus) / (2 * V0 * delta_y) * -1
     return effective_duration
 
-def calculate_oas(cashflows, months, base_curve, market_price):
-    def present_value_with_spread(oas):
-        return sum(cf / (1 + (r + oas)/12)**t for cf, t, r in zip(cashflows, months, base_curve)) - market_price
-
-    result = root_scalar(present_value_with_spread, bracket=[-0.05, 0.20], method='brentq')
-    return result.root if result.converged else None
 
 
 
@@ -91,7 +86,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
         remaining_principal -= (principal_payment + prepayment)
         serv_fee_cf = service_fee/12*(remaining_principal+(principal_payment + prepayment))
         ancillary_fee = (ancillary/12)*loan_count
-        pandi_float = (pandi_flt/30)*flt_earn_rate/12*(interest_payment+prepayment+principal_payment)
+        pandi_float = (13 / 30) * flt_earn_rate / 12 * (interest_payment + prepayment + principal_payment)
         escrow_float = (escrow_bal_float*flt_earn_rate/12)*loan_count
         cost_to_service = (cts/12)*loan_count
         add_cts = additional_cts*del_loan_count
@@ -134,7 +129,7 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     df.to_csv("C:/Users/colem/msr_cash_flows2.csv",
               columns=['Month', 'Beginning Bal', 'Principal', 'Interest', 'Prepayment', 'End Balance', 'Service Fee',
                        'Ancillary', 'PandI Float', 'Escrow Float', 'CTS', 'Additional_CTS', 'Setup Costs', 'Int Escrow', 'Int Lost',
-                       'Total Cash Flow',  'Disc MSR Cashflow', 'Financing_cost', 'Market Value'], index=False, float_format='${:,.0f}'.format)
+                       'Total Cash Flow',  'Disc MSR Cashflow', 'Financing_cost', 'Market Value'], index=False, float_format='${:,.4f}'.format)
 
     print(df)
 
@@ -163,23 +158,11 @@ def loan_amortization_schedule(principal, rate, term, prepayment_percentage, ser
     irr2 = npf.irr(px2)*12
     print("ROE: {:.2%}".format(irr2))
 
-    # === TRUE OAS CALCULATION ===
-    cashflows = df['Disc MSR Cashflow'].values
-    months = df['Month'].values
-    base_curve = [discount_rate] * len(months)
-    market_price = price * principal  # MSR price
-
-    oas = calculate_oas(cashflows, months, base_curve, market_price)
-
-    oas = calculate_oas(cashflows, months, base_curve, market_price)
-    if oas is not None:
-        print(f"Option Adjusted Spread (OAS): {oas:.2%}")
-    else:
-        print("OAS calculation failed.")
 
     print(f"Effective Duration: {effective_duration:.3f}")
     line2 = f"{'------------------------------------'}"  # ADD THIS LINE
     print(line2)
+
 
     return amortization_schedule
 
